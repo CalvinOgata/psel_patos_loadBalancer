@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PSEL Load Balancer UI</title>
+</head>
+<body style="text-align:center; padding-top:50px;">
+    <h1>PSEL Load Balancer</h1>
+    <button onclick="callServer()">Hello</button>
+    <h2 id="output" style="color:green;"></h2>
+
+    <script>
+        async function callServer() {
+            const response = await fetch('/', { method: 'POST' });
+            const data = await response.text();
+            document.getElementById('output').innerText = data;
+        }
+    </script>
+</body>
+</html>
