@@ -16,4 +16,9 @@ In accordance with the challenge guidelines, this project avoids high-level abst
 - **Active Health Checking:** Background routines monitoring backend server health via raw TCP probes.
 
 ---
-*Documenting the journey, challenges, and architectural decisions made throughout the PSEL process.*
+
+### Day 0: Getting Started
+
+Laid the groundwork for the project today. I updated `README.md` with the overall project scope, set up `main.go` for the initial core logic, and built a basic `index.html` interface to make testing visual rather than terminal-bound. 
+
+Most of my time was spent studying TCP/IP and HTTP fundamentals—specifically how HTTP is essentially structured text parsing over a network stream. I also spent time dissecting Go's standard libraries (`net`, `bufio`) to understand precisely how each function and connection operates under the hood.
