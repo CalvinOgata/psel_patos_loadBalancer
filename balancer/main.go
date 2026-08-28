@@ -19,20 +19,20 @@ func main() {
 	fmt.Println("TCP Server listening on http://localhost:8080")
 
 	for {
-		conn, err := listener.Accept()
+		connection, err := listener.Accept()
 		if err != nil {
-			log.Printf("Failed to accept connection: %v", err)
+			log.Printf("Failed to accept connectionection: %v", err)
 			continue
 		}
 
-		go handleConnection(conn)
+		go handleConnection(connection)
 	}
 }
 
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
+func handleConnection(connection net.Conn) {
+	defer connection.Close()
 
-	reader := bufio.NewReader(conn)             // the "raw" HTTP request
+	reader := bufio.NewReader(connection)       // the "raw" HTTP request
 	requestLine, err := reader.ReadString('\n') // break each string after '\n'
 	if err != nil {
 		return
@@ -47,23 +47,23 @@ func handleConnection(conn net.Conn) {
 
 	if path == "/" {
 		switch method {
-		case "GET": // sends the HTML file across the connection
+		case "GET": // sends the HTML file across the connectionection
 			html, err := os.ReadFile("index.html")
 			if err != nil {
-				sendResponse(conn, "text/plain", "500 Internal Server Error")
+				sendResponse(connection, "text/plain", "500 Internal Server Error")
 			}
-			sendResponse(conn, "text/html", string(html))
+			sendResponse(connection, "text/html", string(html))
 		case "POST": // updates with the "Hello World" message, sent to JavaScript and formulated afterwards
-			sendResponse(conn, "text/plain", "Hello World!")
+			sendResponse(connection, "text/plain", "Hello World!")
 		default:
-			sendResponse(conn, "text/plain", "That's illegal...")
+			sendResponse(connection, "text/plain", "That's illegal...")
 		}
 	} else {
-		sendResponse(conn, "text/plain", "404 Not Found")
+		sendResponse(connection, "text/plain", "404 Not Found")
 	}
 }
 
-func sendResponse(conn net.Conn, contentType string, body string) {
+func sendResponse(connection net.Conn, contentType string, body string) {
 	response := fmt.Sprintf(
 		"HTTP/1.1 200 OK\r\n"+
 			"Content-Type: %s\r\n"+
@@ -72,5 +72,5 @@ func sendResponse(conn net.Conn, contentType string, body string) {
 			"%s",
 		contentType, len(body), body,
 	)
-	conn.Write([]byte(response))
+	connection.Write([]byte(response))
 }
