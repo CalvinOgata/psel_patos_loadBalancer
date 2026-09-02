@@ -59,20 +59,20 @@ func serveImage(connection net.Conn, reqPath string) {
 	filename := strings.TrimPrefix(reqPath, "/images/")
 	cleanPath := filepath.Join(".", "images", filepath.Clean(filename))
 
-	imageBinary, err := os.ReadFile(cleanPath)
-	if err != nil {
-		sendResponse(connection, "404 Not Found", "text/plain", []byte("Image Not Found"))
-		return
-	}
-
-	contentType := "application/octet-stream"
+	var contentType string
 	switch strings.ToLower(filepath.Ext(cleanPath)) {
 	case ".png":
 		contentType = "image/png"
 	case ".jpg", ".jpeg":
 		contentType = "image/jpeg"
 	default:
-		contentType = "error" //check on later
+		sendResponse(connection, "415 Unsupport Media Type", "text/plain", []byte("Only PNG and JPG/JPEG images are supported!"))
+	}
+
+	imageBinary, err := os.ReadFile(cleanPath)
+	if err != nil {
+		sendResponse(connection, "404 Not Found", "text/plain", []byte("Image Not Found"))
+		return
 	}
 
 	sendResponse(connection, "200 OK", contentType, imageBinary)
