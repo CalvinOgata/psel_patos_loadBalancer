@@ -1,19 +1,44 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>PSEL Load Balancer UI</title>
-</head>
-<body style="text-align:center; padding-top:50px;">
-    <h1>PSEL Load Balancer</h1>
-    <button onclick="callServer()">Hello</button>
-    <h2 id="output" style="color:green;"></h2>
+	<head>
+		<title>PSEL Load Balancer</title>
+	</head>
+	<body style="text-align:center; padding-top:50px;">
+		<h1>PSEL Load Balancer</h1>
+		<button onclick="fetchRandomImage()">Get Random Image</button>
 
-    <script>
-        async function callServer() {
-            const response = await fetch('/', { method: 'POST' });
-            const data = await response.text();
-            document.getElementById('output').innerText = data;
-        }
-    </script>
-</body>
+		<div id="imageContainer" style="margin-top: 20px;"></div>
+
+		<h2 id="output" style="color:green;"></h2>
+
+		<script>
+			let currentImageURL = null;
+
+			async function fetchRandomImage() {
+				try {
+					const response = await fetch('/random-image', { cache: 'no-store' });
+					if (!response.ok) {
+						throw new Error(`Server error: ${response.status}`);
+					}
+
+					const name = response.headers.get('X-Image-Name') || 'unknown';
+
+					// the response IS the image now, so it is wrapped into a local URL
+					if (currentImageURL) {
+						URL.revokeObjectURL(currentImageURL);
+					}
+					currentImageURL = URL.createObjectURL(await response.blob());
+
+					const container = document.getElementById('imageContainer');
+					container.innerHTML = `<img src="${currentImageURL}" alt="Random Image" style="max-width: 500px; border-radius: 8px;">`;
+
+					document.getElementById('output').style.color = 'green';
+					document.getElementById('output').innerText = `Served: ${name}`;
+				} catch (err) {
+					document.getElementById('output').style.color = 'red';
+					document.getElementById('output').innerText = err.message;
+				}
+			}
+		</script>
+	</body>
 </html>
