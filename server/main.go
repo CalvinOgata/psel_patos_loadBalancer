@@ -10,10 +10,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-var imagesDir = flag.String("images", "images", "Folder holding the images to serve")
+var (
+	// informs the main image folder
+	imagesDir = flag.String("images", "images", "Folder holding the images to serve")
+	// holds the answer back on purpose, so the balancer has a slow backend to route around
+	delay = flag.Duration("delay", 0, "Artificial delay before answering")
+)
 
+// makes sure the connection is up for the LD to send stuff
 func main() {
 	port := flag.String("port", "8081", "Port to listen on")
 	flag.Parse()
@@ -39,6 +46,7 @@ func main() {
 	}
 }
 
+// handles the connection and distributes tasks based on the input
 func handleConnection(connection net.Conn) {
 	defer connection.Close()
 
@@ -55,40 +63,31 @@ func handleConnection(connection net.Conn) {
 	method, path := parts[0], parts[1]
 
 	switch {
-	case method == "GET" && (path == "/random-image" || strings.HasPrefix(path, "/images/")):
-		serveImage(connection, path)
+	case method == "GET" && path == "/random-image":
+		serveImage(connection)
 	default:
 		sendResponse(connection, "404 Not Found", "text/plain", []byte("Non-existing path"))
 	}
 }
 
-// serves a file from the images folder: '/random-image' draws one at random,
-// '/images/<name>' serves that exact file. Both end on the same read-and-send tail.
-func serveImage(connection net.Conn, path string) {
-	name := strings.TrimPrefix(path, "/images/")
+// serves a random image from the 'images' folder
+func serveImage(connection net.Conn) {
+	// the connection stays open while it sleeps, which is what makes this
+	// instance look busy to the balancer
+	time.Sleep(*delay)
 
-	if path == "/random-image" {
-		picked, err := pickRandomImage()
-		if err != nil {
-			sendResponse(connection, "404 Not Found", "text/plain", []byte(err.Error()))
-			return
-		}
-		name = picked
-	}
-
-	// keeps the request from escaping the images folder ('/images/../../etc/passwd')
-	if name == "" || strings.ContainsAny(name, "/\\") || strings.Contains(name, "..") {
-		sendResponse(connection, "400 Bad Request", "text/plain", []byte("Invalid image name"))
+	name, err := pickRandomImage()
+	if err != nil {
+		sendResponse(connection, "404 Not Found", "text/plain", []byte(err.Error()))
 		return
 	}
 
 	body, err := os.ReadFile(filepath.Join(*imagesDir, name))
 	if err != nil {
-		sendResponse(connection, "404 Not Found", "text/plain", []byte("Image not found"))
+		sendResponse(connection, "404 Not Found", "text/plain", []byte("Image not Found"))
 		return
 	}
 
-	// the name rides along on a header so the page can show which image it got
 	sendResponse(connection, "200 OK", contentTypeFor(name), body, "X-Image-Name: "+name)
 }
 
