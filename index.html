@@ -7,12 +7,23 @@
 		<h1>PSEL Load Balancer</h1>
 		<button onclick="fetchRandomImage()">Get Random Image</button>
 
+		<div style="margin-top: 20px;">
+			<input type="file" id="fileInput" accept="image/png,image/jpeg">
+			<button onclick="uploadImage()">Upload Image</button>
+		</div>
+
 		<div id="imageContainer" style="margin-top: 20px;"></div>
 
 		<h2 id="output" style="color:green;"></h2>
 
 		<script>
 			let currentImageURL = null;
+
+			function show(message, color) {
+				const output = document.getElementById('output');
+				output.style.color = color;
+				output.innerText = message;
+			}
 
 			async function fetchRandomImage() {
 				try {
@@ -23,7 +34,7 @@
 
 					const name = response.headers.get('X-Image-Name') || 'unknown';
 
-					// the response IS the image now, so it is wrapped into a local URL
+					// the response is the image
 					if (currentImageURL) {
 						URL.revokeObjectURL(currentImageURL);
 					}
@@ -32,13 +43,43 @@
 					const container = document.getElementById('imageContainer');
 					container.innerHTML = `<img src="${currentImageURL}" alt="Random Image" style="max-width: 500px; border-radius: 8px;">`;
 
-					document.getElementById('output').style.color = 'green';
-					document.getElementById('output').innerText = `Served: ${name}`;
+					show(`Served: ${name}`, 'green');
 				} catch (err) {
-					document.getElementById('output').style.color = 'red';
-					document.getElementById('output').innerText = err.message;
+					show(err.message, 'red');
 				}
 			}
+
+			async function uploadImage() {
+				const input = document.getElementById('fileInput');
+				const file = input.files[0];
+				if (!file) {
+					show('Pick a file first', 'red');
+					return;
+				}
+
+				// illegal characters get blocked here before refused there
+				const name = file.name.replace(/[^A-Za-z0-9._-]/g, '_');
+
+				try {
+					// the body is the raw file: no multipart, so there is no boundary for
+					// the balancer to hand-parse on the other side
+					const response = await fetch(`/upload/${name}`, {
+						method: 'POST',
+						headers: { 'Content-Type': file.type },
+						body: file,
+					});
+
+				const message = (await response.text()).trim();
+				if (!response.ok) {
+					throw new Error(message || `Server error: ${response.status}`);
+				}
+
+				show(message, 'green');
+				input.value = '';
+			} catch (err) {
+				show(err.message, 'red');
+			}
+		}
 		</script>
 	</body>
 </html>
